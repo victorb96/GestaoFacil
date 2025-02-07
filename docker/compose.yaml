@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  gf-controle-acesso-db:
+    container_name: gf-controle-acesso-db
+    image: postgres:16.4
+    restart: always
+    volumes:
+      - controle_acesso_db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - gf-network
+
+  gf-controle-acesso-api:
+    depends_on:
+      - gf-controle-acesso-db
+    container_name: gf-controle-acesso-api
+    image: victorb96/gf-controle-acesso:latest
+    restart: always
+    environment:
+      - DB_HOST=gf-controle-acesso-db
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PWD=${POSTGRES_PASSWORD}
+      - JWT_CONTROLE_ACESSO_KEY=${JWT_CONTROLE_ACESSO_KEY}
+    networks:
+      - gf-network
+    ports:
+      - 8080:8080
+
+  gf-app:
+    container_name: gf-app
+    build:
+      context: ./../
+    environment:
+      - NODE_ENV=production
+      - URL_API=http://localhost:8080
+    depends_on:
+      - gf-controle-acesso-api
+    ports:
+      - 10000:80
+    networks:
+      - gf-network
+
+volumes:
+  controle_acesso_db_data:
+
+networks:
+  gf-network:
+    driver: bridge
